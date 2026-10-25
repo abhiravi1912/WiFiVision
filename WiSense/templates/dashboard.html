@@ -1,0 +1,247 @@
+{% extends "base.html" %}
+
+{% block title %}Dashboard — WiFi-Vision{% endblock %}
+{% block description %}Live monitoring dashboard for WiFi-Vision wireless sensing system.{% endblock %}
+
+{% block extra_css %}
+<link rel="stylesheet" href="{{ url_for('static', filename='css/dashboard.css') }}" />
+{% endblock %}
+
+{% block content %}
+
+<div class="dash-layout">
+
+  <!-- ── Sidebar ──────────────────────────────────────────────────────── -->
+  <aside class="dash-sidebar" aria-label="Dashboard sidebar">
+
+    <div class="dash-brand">
+      <a href="/" class="dash-logo" aria-label="Back to home">WiFi-Vision</a>
+      <div class="dash-mode-badge mono" id="dashModeBadge">DEMO MODE</div>
+    </div>
+
+    <nav class="dash-nav" aria-label="Dashboard navigation">
+      <button class="dash-nav-item active" data-panel="status" aria-pressed="true">
+        <svg class="dash-nav-icon" viewBox="0 0 20 20" fill="none" aria-hidden="true">
+          <circle cx="10" cy="10" r="3" fill="currentColor" />
+          <circle cx="10" cy="10" r="7" stroke="currentColor" stroke-width="1.5" opacity=".4" />
+        </svg>
+        Status
+      </button>
+      <button class="dash-nav-item" data-panel="signal" aria-pressed="false">
+        <svg class="dash-nav-icon" viewBox="0 0 20 20" fill="none" aria-hidden="true">
+          <polyline points="1,14 5,8 8,12 11,5 14,10 17,6 19,9" stroke="currentColor" stroke-width="1.5"
+            stroke-linejoin="round" stroke-linecap="round" />
+        </svg>
+        Signal
+      </button>
+      <button class="dash-nav-item" data-panel="hardware" aria-pressed="false">
+        <svg class="dash-nav-icon" viewBox="0 0 20 20" fill="none" aria-hidden="true">
+          <rect x="2" y="6" width="16" height="10" rx="1.5" stroke="currentColor" stroke-width="1.5" />
+          <rect x="5" y="9" width="3" height="2" rx=".5" fill="currentColor" opacity=".5" />
+          <rect x="10" y="9" width="2" height="2" rx=".5" fill="currentColor" opacity=".5" />
+          <line x1="2" y1="11" x2="0" y2="11" stroke="currentColor" stroke-width="1.5" />
+          <line x1="18" y1="11" x2="20" y2="11" stroke="currentColor" stroke-width="1.5" />
+        </svg>
+        Hardware
+      </button>
+    </nav>
+
+    <div class="dash-sidebar-footer">
+      <a href="/" class="dash-back-link">← Back to site</a>
+    </div>
+
+  </aside>
+
+  <!-- ── Main panels ──────────────────────────────────────────────────── -->
+  <div class="dash-main">
+
+    <!-- ── Top bar ──────────────────────────────────────────────────── -->
+    <header class="dash-topbar" aria-label="Dashboard status bar">
+      <div class="dash-sys-status">
+        <span class="status-indicator" id="sysIndicator" aria-label="System online"></span>
+        <span class="mono dash-sys-label" id="sysLabel">SYSTEM ONLINE</span>
+      </div>
+      <div class="dash-topbar-right">
+        <button class="dash-connect-btn" id="dashConnectBtn" title="Pair Phone via QR"
+          aria-label="Connect Mobile Device">
+          <svg viewBox="0 0 24 24" width="14" height="14" fill="none" stroke="currentColor" stroke-width="2">
+            <rect x="5" y="2" width="14" height="20" rx="3"></rect>
+            <line x1="12" y1="18" x2="12.01" y2="18"></line>
+          </svg>
+          <span>Phone Link</span>
+        </button>
+        <span class="mono dash-ts" id="dashTimestamp" aria-live="polite" aria-label="Last update time">--:--:--</span>
+        <span class="demo-badge mono">DEMO MODE</span>
+      </div>
+    </header>
+
+    <!-- ════ Panel: Status ════════════════════════════════════════════ -->
+    <section class="dash-panel active" id="panel-status" aria-labelledby="panelStatusHeading">
+
+      <!-- Central detection display -->
+      <div class="detection-hero">
+        <div class="detection-presence" id="detectionPresence" aria-live="polite" aria-label="Presence status">
+          <span class="detection-label mono">PRESENCE</span>
+          <span class="detection-value" id="presenceValue">PRESENT</span>
+        </div>
+
+        <div class="detection-silhouette" id="detectionSilhouette" aria-hidden="true">
+          <!-- drawn by dashboard.js -->
+        </div>
+
+        <div class="detection-activity" id="detectionActivity" aria-live="polite" aria-label="Current activity">
+          <span class="detection-label mono">ACTIVITY</span>
+          <span class="detection-value detection-value--activity accent" id="activityValue">Empty Room</span>
+        </div>
+      </div>
+
+      <!-- Metrics row -->
+      <div class="metrics-row" aria-label="Detection metrics">
+        <div class="metric-card" id="confCard">
+          <span class="metric-label mono">Confidence</span>
+          <div class="metric-value-wrap">
+            <span class="metric-value" id="confValue">98%</span>
+            <div class="conf-bar-wrap" aria-hidden="true">
+              <div class="conf-bar" id="confBar" style="width: 98%"></div>
+            </div>
+          </div>
+        </div>
+        <div class="metric-card">
+          <span class="metric-label mono">Zone</span>
+          <span class="metric-value" id="zoneValue">A</span>
+        </div>
+        <div class="metric-card">
+          <span class="metric-label mono">CSI Stream</span>
+          <span class="metric-value mono" id="streamValue">LIVE</span>
+        </div>
+      </div>
+
+      <!-- Confidence Score Graph -->
+      <div class="conf-graph-section" aria-label="Confidence score over time">
+        <div class="conf-graph-header">
+          <h2 class="conf-graph-title">Confidence Score</h2>
+          <div class="conf-graph-meta">
+            <span class="mono conf-graph-label" id="confGraphActivity">— Waiting for data</span>
+            <span class="signal-live-badge mono" id="confGraphBadge">● LIVE</span>
+          </div>
+        </div>
+        <div class="conf-graph-wrap oscilloscope" aria-label="Confidence score graph">
+          <canvas id="confScoreCanvas" aria-hidden="true"></canvas>
+          <div class="osc-labels" aria-hidden="true">
+            <span class="mono osc-label-y">Confidence</span>
+            <span class="mono osc-label-x">Time →</span>
+          </div>
+        </div>
+        <div class="signal-meta">
+          <span class="mono" id="confGraphSample">Waiting for prediction data</span>
+          <span class="mono">~2 s poll</span>
+        </div>
+      </div>
+
+    </section>
+
+    <!-- ════ Panel: Signal ════════════════════════════════════════════ -->
+    <section class="dash-panel" id="panel-signal" aria-labelledby="panelSignalHeading" hidden>
+
+      <div class="signal-header">
+        <h2 class="dash-panel-title" id="panelSignalHeading">CSI Frequency vs Time</h2>
+        <div class="signal-controls">
+          <span class="mono signal-ch-label">64 Subcarriers · Waterfall</span>
+          <span class="signal-live-badge mono" id="signalLiveBadge" aria-live="polite">● LIVE</span>
+        </div>
+      </div>
+
+      <div class="oscilloscope csi-spectrogram" aria-label="CSI frequency-vs-time spectrogram">
+        <canvas id="dashSignalCanvas" aria-hidden="true"></canvas>
+        <div class="osc-labels" aria-hidden="true">
+          <span class="mono osc-label-y">Frequency (Subcarrier) ↕</span>
+          <span class="mono osc-label-x">Time →</span>
+        </div>
+      </div>
+
+      <div class="signal-meta">
+        <span class="mono" id="sigSampleCount">Waiting for CSI data</span>
+        <span class="mono" id="sigUpdateRate">~5 Hz</span>
+      </div>
+
+    </section>
+
+    <!-- ════ Panel: Hardware ══════════════════════════════════════════ -->
+    <section class="dash-panel" id="panel-hardware" aria-labelledby="panelHardwareHeading" hidden>
+
+      <h2 class="dash-panel-title" id="panelHardwareHeading">Hardware Status</h2>
+
+      <ul class="hw-status-list" role="list" aria-label="Hardware connection status">
+        <li class="hw-status-item" id="hwSender">
+          <span class="hw-name">ESP32 Sender</span>
+          <span class="hw-role mono">CSI Transmitter</span>
+          <span class="hw-status mono" id="senderStatus">—</span>
+        </li>
+        <li class="hw-status-item" id="hwReceiver">
+          <span class="hw-name">ESP32 Receiver</span>
+          <span class="hw-role mono">CSI Capture</span>
+          <span class="hw-status mono" id="receiverStatus">—</span>
+        </li>
+        <li class="hw-status-item" id="hwCSI">
+          <span class="hw-name">CSI Stream</span>
+          <span class="hw-role mono">Data Pipeline</span>
+          <span class="hw-status mono" id="csiStatus">—</span>
+        </li>
+        <li class="hw-status-item" id="hwPred">
+          <span class="hw-name">Prediction Engine</span>
+          <span class="hw-role mono">Activity Classifier</span>
+          <span class="hw-status mono" id="predStatus">ACTIVE</span>
+        </li>
+      </ul>
+
+      <div class="hw-note">
+        <p class="mono hw-note-text">
+          Hardware indicators show <strong>DEMO</strong> until the ESP32 pipeline is connected.
+          Replace the demo services to enable live readings.
+        </p>
+      </div>
+
+    </section>
+
+  </div><!-- /dash-main -->
+
+  <!-- ── Mobile Bottom Navigation Bar (iOS & Android) ──────────────────── -->
+  <nav class="dash-mobile-nav" aria-label="Mobile Dashboard Navigation">
+    <button class="dash-mobile-nav-btn active" data-panel="status" aria-pressed="true" aria-label="Status Panel">
+      <svg class="mobile-nav-icon" viewBox="0 0 20 20" fill="none" aria-hidden="true">
+        <circle cx="10" cy="10" r="3" fill="currentColor" />
+        <circle cx="10" cy="10" r="7" stroke="currentColor" stroke-width="1.5" opacity=".5" />
+      </svg>
+      <span>Status</span>
+    </button>
+    <button class="dash-mobile-nav-btn" data-panel="signal" aria-pressed="false" aria-label="Signal Waveform">
+      <svg class="mobile-nav-icon" viewBox="0 0 20 20" fill="none" aria-hidden="true">
+        <polyline points="1,14 5,8 8,12 11,5 14,10 17,6 19,9" stroke="currentColor" stroke-width="1.5"
+          stroke-linejoin="round" stroke-linecap="round" />
+      </svg>
+      <span>Signal</span>
+    </button>
+    <button class="dash-mobile-nav-btn" data-panel="hardware" aria-pressed="false" aria-label="Hardware Nodes">
+      <svg class="mobile-nav-icon" viewBox="0 0 20 20" fill="none" aria-hidden="true">
+        <rect x="2" y="6" width="16" height="10" rx="1.5" stroke="currentColor" stroke-width="1.5" />
+        <rect x="5" y="9" width="3" height="2" rx=".5" fill="currentColor" opacity=".5" />
+        <rect x="10" y="9" width="2" height="2" rx=".5" fill="currentColor" opacity=".5" />
+      </svg>
+      <span>Hardware</span>
+    </button>
+    <button class="dash-mobile-nav-btn" id="mobileNavConnectBtn" aria-label="Connect Phone via QR">
+      <svg class="mobile-nav-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8">
+        <rect x="5" y="2" width="14" height="20" rx="3"></rect>
+        <line x1="12" y1="18" x2="12.01" y2="18"></line>
+      </svg>
+      <span>Link Phone</span>
+    </button>
+  </nav>
+
+</div><!-- /dash-layout -->
+
+{% endblock %}
+
+{% block extra_js %}
+<script src="{{ url_for('static', filename='js/dashboard.js') }}" defer></script>
+{% endblock %}

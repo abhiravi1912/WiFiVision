@@ -1,0 +1,164 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover, maximum-scale=5.0" />
+
+  <title>{% block title %}WiFi-Vision — See the Movement Without Seeing the Person{% endblock %}</title>
+  <meta name="description" content="{% block description %}WiFi-Vision is a privacy-first wireless sensing system that uses Wi-Fi signal changes to detect human presence and movement without cameras.{% endblock %}" />
+  
+  <!-- Web App & Theme Color (iOS / Android) -->
+  <meta name="theme-color" content="#0D0F0E" />
+  <meta name="color-scheme" content="dark" />
+  <meta name="mobile-web-app-capable" content="yes" />
+  <meta name="application-name" content="WiFi-Vision" />
+  <meta name="format-detection" content="telephone=no" />
+
+  <!-- Apple iOS Web App Specifics -->
+  <meta name="apple-mobile-web-app-capable" content="yes" />
+  <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent" />
+  <meta name="apple-mobile-web-app-title" content="WiFi-Vision" />
+
+  <!-- Web App Manifest -->
+  <link rel="manifest" href="/manifest.webmanifest" />
+
+  <!-- Icons -->
+  <link rel="icon" type="image/svg+xml" href="{{ url_for('static', filename='icons/favicon.svg') }}" />
+  <link rel="apple-touch-icon" sizes="180x180" href="{{ url_for('static', filename='icons/apple-touch-icon.png') }}" />
+  <link rel="icon" type="image/png" sizes="192x192" href="{{ url_for('static', filename='icons/icon-192.png') }}" />
+
+  <!-- Fonts -->
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+  <link href="https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@300;400;500;600;700&family=IBM+Plex+Mono:wght@400;500&display=swap" rel="stylesheet" />
+
+  <!-- Styles -->
+  <link rel="stylesheet" href="{{ url_for('static', filename='css/style.css') }}" />
+  {% block extra_css %}{% endblock %}
+</head>
+<body>
+
+  <!-- ── Navbar ─────────────────────────────────────────────────────────── -->
+  <nav class="navbar" id="navbar" aria-label="Main navigation">
+    <div class="nav-inner">
+      <a href="/" class="nav-logo" aria-label="WiFi-Vision home">
+        WiFi-Vision
+      </a>
+
+      <!-- Quick Phone Link in Nav -->
+      <button class="nav-phone-btn" id="navPhoneLink" title="Connect Mobile Phone" aria-label="Connect Phone via QR">
+        <svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+          <rect x="5" y="2" width="14" height="20" rx="3"></rect>
+          <line x1="12" y1="18" x2="12.01" y2="18"></line>
+        </svg>
+        <span>Connect Phone</span>
+      </button>
+
+      <button class="nav-toggle" id="navToggle" aria-label="Toggle navigation" aria-expanded="false">
+        <span></span><span></span><span></span>
+      </button>
+
+      <ul class="nav-links" id="navLinks" role="list">
+        <li><a href="/#how-it-works" class="nav-link">How It Works</a></li>
+        <li><a href="/#technology"   class="nav-link">Technology</a></li>
+        <li><a href="/dashboard"     class="nav-link">Dashboard</a></li>
+        <li><a href="/#about"        class="nav-link">About</a></li>
+        <li>
+          <button class="nav-link nav-install-btn" id="pwaInstallNavBtn" style="display: none;">
+            ⚡ Install App
+          </button>
+        </li>
+        <li>
+          <a href="/dashboard" class="nav-cta" id="navDashBtn">
+            Open Dashboard →
+          </a>
+        </li>
+      </ul>
+    </div>
+  </nav>
+
+  <!-- ── Main content ───────────────────────────────────────────────────── -->
+  <main id="main-content">
+    {% block content %}{% endblock %}
+  </main>
+
+  <!-- ── Footer ─────────────────────────────────────────────────────────── -->
+  <footer class="site-footer" aria-label="Site footer">
+    <div class="footer-inner">
+      <div class="footer-brand">
+        <span class="footer-logo">WiFi-Vision</span>
+        <p class="footer-tagline">Privacy-first sensing through Wi-Fi.</p>
+      </div>
+      <div class="footer-meta">
+        <span class="footer-chips">
+          <span class="chip">ESP32</span>
+          <span class="chip">Wi-Fi CSI</span>
+          <span class="chip">iOS & Android PWA</span>
+          <span class="chip">Machine Learning</span>
+        </span>
+        <p class="footer-copy">© 2026 WiFi-Vision • Progressive Web Application</p>
+      </div>
+    </div>
+  </footer>
+
+  <!-- ── Mobile Connect / QR Modal ──────────────────────────────────────── -->
+  <div class="modal-backdrop" id="mobileModalBackdrop" aria-hidden="true">
+    <div class="modal-card" role="dialog" aria-modal="true" aria-labelledby="modalTitle">
+      <button class="modal-close-btn" id="modalCloseBtn" aria-label="Close modal">×</button>
+      
+      <div class="modal-header">
+        <div class="modal-icon-badge">📱</div>
+        <h3 class="modal-title" id="modalTitle">Connect Mobile Device</h3>
+        <p class="modal-subtitle">Open WiFi-Vision on your iPhone, iPad, or Android phone</p>
+      </div>
+
+      <div class="modal-qr-section">
+        <div class="modal-qr-frame" id="modalQrCode">
+          <!-- QR code rendered by qrcode.min.js -->
+        </div>
+        <span class="modal-qr-hint mono">Point iPhone or Android camera to scan</span>
+      </div>
+
+      <div class="modal-url-box">
+        <span class="modal-url-label mono">Local Network URL</span>
+        <div class="modal-url-input-wrap">
+          <input type="text" id="modalUrlInput" readonly value="Loading local IP..." />
+          <button class="modal-copy-btn mono" id="modalCopyBtn" title="Copy URL">Copy</button>
+        </div>
+        <div class="modal-copy-feedback mono" id="modalCopyFeedback">Link copied to clipboard!</div>
+      </div>
+
+      <div class="modal-tabs">
+        <button class="modal-tab-btn active" data-tab="ios">🍎 iOS (Safari)</button>
+        <button class="modal-tab-btn" data-tab="android">🤖 Android (Chrome)</button>
+      </div>
+
+      <div class="modal-tab-content active" id="tabContentIos">
+        <ol class="modal-guide-steps">
+          <li>Scan the QR code with your iPhone Camera or open Safari to the URL above.</li>
+          <li>Tap the <strong>Share</strong> button <span class="share-icon-glyph">📤</span> at the bottom of Safari.</li>
+          <li>Scroll down and tap <strong>"Add to Home Screen"</strong> (<span class="plus-glyph">+</span>).</li>
+          <li>WiFi-Vision will launch in fullscreen standalone mode just like a native iOS app!</li>
+        </ol>
+      </div>
+
+      <div class="modal-tab-content" id="tabContentAndroid">
+        <ol class="modal-guide-steps">
+          <li>Scan the QR code or open Google Chrome to the URL above.</li>
+          <li>Tap the <strong>"Install App"</strong> prompt or open the three dots menu (<span class="dots-glyph">⋮</span>).</li>
+          <li>Select <strong>"Install app"</strong> or <strong>"Add to Home screen"</strong>.</li>
+          <li>WiFi-Vision installs directly onto your app drawer and home screen.</li>
+        </ol>
+      </div>
+
+    </div>
+  </div>
+
+  <!-- ── Scripts ────────────────────────────────────────────────────────── -->
+  <script src="{{ url_for('static', filename='js/qrcode.min.js') }}"></script>
+  <script src="{{ url_for('static', filename='js/main.js') }}" defer></script>
+  {% block extra_js %}{% endblock %}
+
+</body>
+</html>
+

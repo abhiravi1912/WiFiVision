@@ -1,0 +1,50 @@
+{
+  "id": "/?source=pwa",
+  "name": "WiFi-Vision Sensing System",
+  "short_name": "WiFi-Vision",
+  "description": "Privacy-first wireless sensing system using Wi-Fi CSI signals to detect human presence and movement without cameras.",
+  "start_url": "/dashboard?source=pwa",
+  "scope": "/",
+  "display": "standalone",
+  "orientation": "any",
+  "background_color": "#0D0F0E",
+  "theme_color": "#0D0F0E",
+  "categories": ["utilities", "iot", "monitoring"],
+  "icons": [
+    {
+      "src": "/static/icons/favicon.svg",
+      "sizes": "any",
+      "type": "image/svg+xml"
+    },
+    {
+      "src": "/static/icons/icon-192.png",
+      "sizes": "192x192",
+      "type": "image/png",
+      "purpose": "any"
+    },
+    {
+      "src": "/static/icons/icon-512.png",
+      "sizes": "512x512",
+      "type": "image/png",
+      "purpose": "any"
+    },
+    {
+      "src": "/static/icons/icon-maskable.png",
+      "sizes": "512x512",
+      "type": "image/png",
+      "purpose": "maskable"
+    }
+  ],
+  "shortcuts": [
+    {
+      "name": "Live Dashboard",
+      "url": "/dashboard",
+      "description": "Open real-time CSI detection dashboard"
+    },
+    {
+      "name": "System Overview",
+      "url": "/",
+      "description": "WiFi-Vision architecture and documentation"
+    }
+  ]
+}

@@ -1,0 +1,278 @@
+"""
+live_bridge.py
+--------------
+Bridges the existing ESP32 CSI/activity inference pipeline into the WiFi-Vision
+Flask frontend.
+
+The bridge intentionally reuses the project's already-tested activity_inference.py
+instead of duplicating preprocessing/model code here.
+
+Environment variables:
+  WIFI_VISION_CSI_ROOT
+      Path to the existing ESP32-WiFi-CSI-Human-Sensing project root.
+      Default: a sibling project named ESP32-WiFi-CSI-Human-Sensing-main.
+
+  WIFI_VISION_CSI_PORT
+      Receiver serial port. Default: COM13.
+
+  WIFI_VISION_CSI_BAUD
+      Serial baud rate. Default: 921600.
+
+  WIFI_VISION_CSI_PYTHON
+      Optional Python executable. If omitted, uses <CSI_ROOT>/.venv/Scripts/python.exe
+      when present, otherwise "py".
+"""
+
+from __future__ import annotations
+
+import ast
+import os
+import re
+from collections import deque
+import subprocess
+import threading
+import time
+from pathlib import Path
+from typing import Optional
+
+
+_CLASS_MAP = {
+    "EMPTY": "Empty Room",
+    "EMPTY_ROOM": "Empty Room",
+    "STANDING": "Standing",
+    "SITTING": "Sitting",
+    "MOVING": "Moving",
+    "WALKING": "Moving",
+}
+
+_TOKEN_RE = re.compile(
+    r"\b(EMPTY_ROOM|EMPTY|STANDING|SITTING|MOVING|WALKING)\b",
+    re.IGNORECASE,
+)
+
+_NUMBER_RE = re.compile(r"(?:P|CONF(?:IDENCE)?)\s*[:=]\s*(0?\.\d+|1(?:\.0+)?)", re.I)
+_CLASS_PROB_RE = re.compile(
+    r"(EMPTY_ROOM|EMPTY|STANDING|SITTING|MOVING|WALKING)\s*[:=]\s*(0?\.\d+|1(?:\.0+)?)",
+    re.I,
+)
+
+
+class LiveInferenceBridge:
+    def __init__(self) -> None:
+        self.lock = threading.Lock()
+        self.process: Optional[subprocess.Popen[str]] = None
+        self.reader_thread: Optional[threading.Thread] = None
+        self.last_prediction = {
+            "mode": "LIVE",
+            "presence": None,
+            "activity": None,
+            "confidence": None,
+            "zone": "—",
+            "updated_at": None,
+        }
+        self.last_line = ""
+        self.signal_samples = deque(maxlen=128)
+        self.signal_metric = "rssi_mean"
+        self.started_at: Optional[float] = None
+
+    def _find_root(self) -> Path:
+        configured = os.getenv("WIFI_VISION_CSI_ROOT")
+        if configured:
+            return Path(configured).expanduser().resolve()
+
+        here = Path(__file__).resolve()
+        candidates = [
+            here.parents[2] / "ESP32-WiFi-CSI-Human-Sensing-main",
+            here.parents[3] / "ESP32-WiFi-CSI-Human-Sensing-main",
+            Path.cwd().parent / "ESP32-WiFi-CSI-Human-Sensing-main",
+        ]
+        for candidate in candidates:
+            if (candidate / "python" / "activity_inference.py").exists():
+                return candidate
+
+        return candidates[0]
+
+    def _python(self, root: Path) -> str:
+        configured = os.getenv("WIFI_VISION_CSI_PYTHON")
+        if configured:
+            return configured
+
+        venv_python = root / ".venv" / "Scripts" / "python.exe"
+        if venv_python.exists():
+            return str(venv_python)
+
+        return "py"
+
+    def _command(self) -> tuple[list[str], Path]:
+        root = self._find_root()
+        script = root / "python" / "activity_inference.py"
+        port = os.getenv("WIFI_VISION_CSI_PORT", "COM13")
+        baud = os.getenv("WIFI_VISION_CSI_BAUD", "921600")
+
+        if not script.exists():
+            raise FileNotFoundError(f"activity_inference.py not found: {script}")
+
+        command = [
+            self._python(root),
+            "-u",
+            str(script),
+            "--port",
+            port,
+            "--baud",
+            baud,
+        ]
+        return command, root
+
+    def start(self) -> None:
+        with self.lock:
+            if self.process is not None and self.process.poll() is None:
+                return
+
+            command, cwd = self._command()
+            env = os.environ.copy()
+            env["PYTHONUNBUFFERED"] = "1"
+
+            self.process = subprocess.Popen(
+                command,
+                cwd=str(cwd),
+                stdout=subprocess.PIPE,
+                stderr=subprocess.STDOUT,
+                text=True,
+                bufsize=1,
+                universal_newlines=True,
+                env=env,
+                creationflags=getattr(subprocess, "CREATE_NO_WINDOW", 0),
+            )
+            self.started_at = time.time()
+
+            self.reader_thread = threading.Thread(
+                target=self._reader,
+                name="wifi-vision-csi-reader",
+                daemon=True,
+            )
+            self.reader_thread.start()
+
+    def _reader(self) -> None:
+        process = self.process
+        if process is None or process.stdout is None:
+            return
+
+        for raw in process.stdout:
+            line = raw.strip()
+            if not line:
+                continue
+            self.last_line = line
+            self._parse_line(line)
+
+    def _parse_line(self, line: str) -> None:
+        # The inference process emits real CSI-derived diagnostics. Keep the
+        # measured RSSI mean as a short rolling signal for /api/csi. This is
+        # deliberately not fabricated waveform data.
+        if "[DIAGNOSTIC]" in line.upper():
+            payload = line.split("[DIAGNOSTIC]", 1)[1].strip()
+            try:
+                values = ast.literal_eval(payload)
+                rssi = float(values.get("rssi_mean"))
+                if rssi == rssi:  # reject NaN without importing math
+                    with self.lock:
+                        self.signal_samples.append(rssi)
+            except (ValueError, TypeError, SyntaxError, AttributeError):
+                pass
+            return
+
+        if "[ONLINE]" not in line.upper():
+            return
+
+        match = _TOKEN_RE.search(line)
+        if not match:
+            return
+
+        raw_class = match.group(1).upper()
+        activity = _CLASS_MAP.get(raw_class)
+        if not activity:
+            return
+
+        confidence = None
+
+        m = _NUMBER_RE.search(line)
+        if m:
+            confidence = float(m.group(1))
+
+        # If the line contains per-class probabilities, use the largest one.
+        probs = []
+        for pm in _CLASS_PROB_RE.finditer(line):
+            probs.append(float(pm.group(2)))
+        if probs:
+            confidence = max(probs)
+
+        if confidence is None:
+            confidence = 0.0
+
+        with self.lock:
+            self.last_prediction = {
+                "mode": "LIVE",
+                "presence": activity != "Empty Room",
+                "activity": activity,
+                "confidence": round(max(0.0, min(1.0, confidence)), 3),
+                "zone": "—",
+                "updated_at": time.time(),
+            }
+
+    def snapshot(self) -> dict:
+        self.start()
+
+        with self.lock:
+            data = dict(self.last_prediction)
+            process = self.process
+
+        if data["updated_at"] is not None:
+            age = time.time() - data["updated_at"]
+            data["stale"] = age > 5.0
+            data["age_seconds"] = round(age, 2)
+        else:
+            data["stale"] = True
+            data["age_seconds"] = None
+
+        if process is not None and process.poll() is not None:
+            data["process_alive"] = False
+            data["error"] = f"inference process exited with code {process.returncode}"
+        else:
+            data["process_alive"] = True
+
+        with self.lock:
+            signal = list(self.signal_samples)
+
+        if signal:
+            lo = min(signal)
+            hi = max(signal)
+            if hi > lo:
+                normalized = [(v - lo) / (hi - lo) for v in signal]
+            else:
+                normalized = [0.5 for _ in signal]
+            data["signal_samples"] = [round(v, 4) for v in normalized]
+            data["signal_metric"] = self.signal_metric
+            data["signal_min"] = round(lo, 2)
+            data["signal_max"] = round(hi, 2)
+        else:
+            data["signal_samples"] = []
+            data["signal_metric"] = self.signal_metric
+
+        return data
+
+    def status(self) -> dict:
+        self.start()
+        snap = self.snapshot()
+
+        live = bool(snap.get("process_alive")) and not snap.get("stale", True)
+
+        return {
+            "mode": "LIVE" if live else "LIVE_WAITING",
+            "sender": "connected" if live else "waiting",
+            "receiver": "connected" if live else "waiting",
+            "csi": "live" if live else "waiting",
+            "prediction": "active" if live else "waiting",
+            "uptime": round(time.time() - self.started_at, 1) if self.started_at else 0,
+        }
+
+
+bridge = LiveInferenceBridge()

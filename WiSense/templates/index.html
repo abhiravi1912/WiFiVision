@@ -1,0 +1,421 @@
+{% extends "base.html" %}
+
+{% block title %}WiFi-Vision — See the Movement Without Seeing the Person{% endblock %}
+
+{% block content %}
+
+<!-- ══════════════════════════════════════════════════════════════
+     HERO
+═══════════════════════════════════════════════════════════════ -->
+<section class="hero" id="hero" aria-labelledby="heroHeading">
+
+  <div class="hero-text">
+    <p class="eyebrow" aria-label="Category">PRIVACY-FIRST WIRELESS SENSING</p>
+
+    <h1 class="hero-heading" id="heroHeading">
+      See the movement.<br />
+      <span class="hero-heading-sub">Without seeing the person.</span>
+    </h1>
+
+    <p class="hero-desc">
+      WiFi-Vision analyzes changes in Wi-Fi signals to detect human presence
+      and movement — no cameras, no wearables, no images.
+    </p>
+
+    <div class="hero-actions">
+      <a href="/dashboard" class="btn btn-primary" id="heroDashBtn">Open Live Dashboard</a>
+      <a href="#how-it-works" class="btn btn-ghost" id="heroHowBtn">How It Works ↓</a>
+    </div>
+  </div>
+
+  <!-- Three.js canvas -->
+  <div class="hero-canvas-wrap" aria-hidden="true" role="presentation">
+    <canvas id="heroCanvas"></canvas>
+    <div class="canvas-label">
+      <span class="mono">ESP32</span>
+      <span class="signal-label">~ Wi-Fi Signal ~</span>
+      <span class="mono">ESP32</span>
+    </div>
+  </div>
+
+</section>
+
+
+<!-- ══════════════════════════════════════════════════════════════
+     HOW IT WORKS
+═══════════════════════════════════════════════════════════════ -->
+<section class="section how-section" id="how-it-works" aria-labelledby="howHeading">
+
+  <div class="section-header">
+    <p class="section-label mono">THE PROCESS</p>
+    <h2 id="howHeading">How WiFi-Vision works</h2>
+    <p class="section-sub">
+      Human movement changes the wireless channel. The ESP32 captures those
+      changes as CSI, which is then processed to identify activity.
+    </p>
+  </div>
+
+  <ol class="steps" role="list">
+    <li class="step reveal">
+      <span class="step-num mono">01</span>
+      <div class="step-body">
+        <h3 class="step-title">Transmit</h3>
+        <p class="step-desc">An ESP32 sender continuously broadcasts Wi-Fi packets across the space.</p>
+      </div>
+    </li>
+    <li class="step reveal">
+      <span class="step-num mono">02</span>
+      <div class="step-body">
+        <h3 class="step-title">Interact</h3>
+        <p class="step-desc">Human movement physically disturbs the propagating wireless wavefronts.</p>
+      </div>
+    </li>
+    <li class="step reveal">
+      <span class="step-num mono">03</span>
+      <div class="step-body">
+        <h3 class="step-title">Capture</h3>
+        <p class="step-desc">A second ESP32 receiver records the resulting Channel State Information.</p>
+      </div>
+    </li>
+    <li class="step reveal">
+      <span class="step-num mono">04</span>
+      <div class="step-body">
+        <h3 class="step-title">Recognize</h3>
+        <p class="step-desc">The CSI pattern is processed to classify the current activity.</p>
+      </div>
+    </li>
+  </ol>
+
+</section>
+
+
+<!-- ══════════════════════════════════════════════════════════════
+     SYSTEM ARCHITECTURE
+═══════════════════════════════════════════════════════════════ -->
+<section class="section arch-section" id="technology" aria-labelledby="archHeading">
+
+  <div class="section-header">
+    <p class="section-label mono">SYSTEM</p>
+    <h2 id="archHeading">End-to-end pipeline</h2>
+  </div>
+
+  <div class="arch-flow" role="list" aria-label="System architecture flow">
+
+    <div class="arch-node reveal" role="listitem">
+      <div class="arch-icon arch-icon--esp">
+        <svg viewBox="0 0 40 40" fill="none" aria-hidden="true">
+          <rect x="4" y="10" width="32" height="20" rx="2" stroke="currentColor" stroke-width="1.5"/>
+          <rect x="8"  y="14" width="6" height="4" rx="1" fill="currentColor" opacity=".4"/>
+          <rect x="16" y="14" width="4" height="4" rx="1" fill="currentColor" opacity=".4"/>
+          <circle cx="30" cy="16" r="2" fill="currentColor" opacity=".7"/>
+          <line x1="4"  y1="22" x2="0"  y2="22" stroke="currentColor" stroke-width="1.5"/>
+          <line x1="36" y1="22" x2="40" y2="22" stroke="currentColor" stroke-width="1.5"/>
+        </svg>
+      </div>
+      <span class="arch-label mono">ESP32 Sender</span>
+    </div>
+
+    <div class="arch-arrow" aria-hidden="true">
+      <div class="arch-signal-line">
+        <span class="arch-dot"></span>
+        <span class="arch-dot"></span>
+        <span class="arch-dot"></span>
+      </div>
+      <span class="arch-arrow-label mono">Wi-Fi Signal</span>
+    </div>
+
+    <div class="arch-node reveal arch-node--person" role="listitem">
+      <div class="arch-icon arch-icon--person">
+        <!-- simple human silhouette -->
+        <svg viewBox="0 0 40 56" fill="none" aria-hidden="true">
+          <circle cx="20" cy="9"  r="7"  fill="currentColor" opacity=".8"/>
+          <path d="M8 30 Q8 18 20 18 Q32 18 32 30 L30 44 H24 L22 34 L20 44 H10 Z"
+                fill="currentColor" opacity=".7"/>
+          <line x1="20" y1="44" x2="14" y2="56" stroke="currentColor" stroke-width="2.5" stroke-linecap="round"/>
+          <line x1="20" y1="44" x2="26" y2="56" stroke="currentColor" stroke-width="2.5" stroke-linecap="round"/>
+        </svg>
+      </div>
+      <span class="arch-label mono">Human Movement</span>
+    </div>
+
+    <div class="arch-arrow" aria-hidden="true">
+      <div class="arch-signal-line arch-signal-line--altered">
+        <span class="arch-dot"></span>
+        <span class="arch-dot"></span>
+        <span class="arch-dot"></span>
+      </div>
+      <span class="arch-arrow-label mono">Changed Signal</span>
+    </div>
+
+    <div class="arch-node reveal" role="listitem">
+      <div class="arch-icon arch-icon--esp">
+        <svg viewBox="0 0 40 40" fill="none" aria-hidden="true">
+          <rect x="4" y="10" width="32" height="20" rx="2" stroke="currentColor" stroke-width="1.5"/>
+          <rect x="8"  y="14" width="6" height="4" rx="1" fill="currentColor" opacity=".4"/>
+          <rect x="16" y="14" width="4" height="4" rx="1" fill="currentColor" opacity=".4"/>
+          <circle cx="30" cy="16" r="2" fill="currentColor" opacity=".7"/>
+          <line x1="4"  y1="22" x2="0"  y2="22" stroke="currentColor" stroke-width="1.5"/>
+          <line x1="36" y1="22" x2="40" y2="22" stroke="currentColor" stroke-width="1.5"/>
+        </svg>
+      </div>
+      <span class="arch-label mono">ESP32 Receiver</span>
+    </div>
+
+    <div class="arch-arrow" aria-hidden="true">
+      <div class="arch-signal-line arch-signal-line--data">
+        <span class="arch-dot"></span>
+        <span class="arch-dot"></span>
+        <span class="arch-dot"></span>
+      </div>
+      <span class="arch-arrow-label mono">CSI Data</span>
+    </div>
+
+    <div class="arch-node reveal arch-node--laptop" role="listitem">
+      <div class="arch-icon arch-icon--laptop">
+        <svg viewBox="0 0 48 36" fill="none" aria-hidden="true">
+          <rect x="4" y="2"  width="40" height="26" rx="2" stroke="currentColor" stroke-width="1.5"/>
+          <rect x="8" y="6"  width="32" height="18" rx="1" fill="currentColor" opacity=".15"/>
+          <path d="M0 30 H48" stroke="currentColor" stroke-width="1.5"/>
+          <path d="M18 28 H30" stroke="currentColor" stroke-width="2.5" stroke-linecap="round"/>
+        </svg>
+      </div>
+      <span class="arch-label mono">WiFi-Vision</span>
+    </div>
+
+  </div>
+
+</section>
+
+
+<!-- ══════════════════════════════════════════════════════════════
+     LIVE DASHBOARD PREVIEW
+═══════════════════════════════════════════════════════════════ -->
+<section class="section preview-section" id="live-preview" aria-labelledby="previewHeading">
+
+  <div class="section-header">
+    <p class="section-label mono">MONITORING</p>
+    <h2 id="previewHeading">See the signal in real time.</h2>
+  </div>
+
+  <div class="preview-card" aria-label="Dashboard preview in demo mode">
+
+    <div class="preview-topbar">
+      <div class="preview-status-dot" aria-hidden="true"></div>
+      <span class="mono preview-status-text">SYSTEM ONLINE</span>
+      <span class="demo-badge mono" aria-label="Demo mode indicator">DEMO MODE</span>
+    </div>
+
+    <div class="preview-body">
+
+      <div class="preview-stats">
+        <div class="stat-item">
+          <span class="stat-label mono">Presence</span>
+          <span class="stat-value" id="previewPresence">Present</span>
+        </div>
+        <div class="stat-item">
+          <span class="stat-label mono">Activity</span>
+          <span class="stat-value accent" id="previewActivity">Moving</span>
+        </div>
+        <div class="stat-item">
+          <span class="stat-label mono">Confidence</span>
+          <span class="stat-value" id="previewConfidence">98%</span>
+        </div>
+        <div class="stat-item">
+          <span class="stat-label mono">Zone</span>
+          <span class="stat-value" id="previewZone">A</span>
+        </div>
+      </div>
+
+      <div class="preview-graph" aria-label="CSI waveform preview">
+        <canvas id="previewSignalCanvas" aria-hidden="true"></canvas>
+        <span class="graph-label mono">CSI AMPLITUDE</span>
+      </div>
+
+    </div>
+
+    <div class="preview-footer-bar">
+      <a href="/dashboard" class="btn btn-primary btn-sm" id="previewDashLink">Open Full Dashboard →</a>
+    </div>
+
+  </div>
+
+</section>
+
+
+<!-- ══════════════════════════════════════════════════════════════
+     ACTIVITY RECOGNITION
+═══════════════════════════════════════════════════════════════ -->
+<section class="section activity-section" id="activities" aria-labelledby="activityHeading">
+
+  <div class="section-header">
+    <p class="section-label mono">DETECTION</p>
+    <h2 id="activityHeading">What WiFi-Vision can detect</h2>
+  </div>
+
+  <div class="activity-layout">
+
+    <div class="activity-selector" role="list" aria-label="Activity types">
+      <button class="activity-btn active" data-activity="Moving"  role="listitem" aria-pressed="true">Moving</button>
+      <button class="activity-btn"        data-activity="Standing" role="listitem" aria-pressed="false">Standing</button>
+      <button class="activity-btn"        data-activity="Sitting"  role="listitem" aria-pressed="false">Sitting</button>
+      <button class="activity-btn"        data-activity="Empty Room" role="listitem" aria-pressed="false">Empty Room</button>
+    </div>
+
+    <div class="activity-display">
+      <div class="activity-silhouette" id="activitySilhouette" aria-hidden="true">
+        <!-- SVG silhouette drawn by JS -->
+      </div>
+      <div class="activity-info">
+        <h3 class="activity-name" id="activityName">Moving</h3>
+        <p class="activity-desc" id="activityDesc">Body movement generates distinct multi-path CSI variation patterns across subcarriers.</p>
+        <canvas class="activity-wave" id="activityWave" aria-label="CSI pattern for selected activity" height="60"></canvas>
+      </div>
+    </div>
+
+  </div>
+
+</section>
+
+
+<!-- ══════════════════════════════════════════════════════════════
+     PRIVACY
+═══════════════════════════════════════════════════════════════ -->
+<section class="section privacy-section" id="privacy" aria-labelledby="privacyHeading">
+
+  <div class="privacy-inner">
+
+    <div class="privacy-text reveal">
+      <p class="section-label mono">APPROACH</p>
+      <h2 id="privacyHeading">No camera.<br />No image.<br />Just the signal.</h2>
+      <p class="privacy-body">
+        WiFi-Vision detects changes in wireless signals instead of capturing images or video.
+        There is nothing to intercept, leak, or store that identifies a person.
+      </p>
+      <p class="privacy-stamp">No image. No audio. No wearable.</p>
+    </div>
+
+    <div class="privacy-compare reveal" aria-label="Traditional vs WiFi-Vision comparison">
+      <div class="compare-col compare-col--trad">
+        <p class="compare-heading">Traditional</p>
+        <div class="compare-chain">
+          <span class="compare-node">Camera</span>
+          <span class="compare-arrow" aria-hidden="true">↓</span>
+          <span class="compare-node">Image</span>
+          <span class="compare-arrow" aria-hidden="true">↓</span>
+          <span class="compare-node compare-node--person">Person</span>
+        </div>
+        <p class="compare-note">Identity exposed</p>
+      </div>
+
+      <div class="compare-divider" aria-hidden="true">vs</div>
+
+      <div class="compare-col compare-col--wv">
+        <p class="compare-heading">WiFi-Vision</p>
+        <div class="compare-chain">
+          <span class="compare-node">Wi-Fi</span>
+          <span class="compare-arrow" aria-hidden="true">↓</span>
+          <span class="compare-node">CSI</span>
+          <span class="compare-arrow" aria-hidden="true">↓</span>
+          <span class="compare-node compare-node--activity">Activity</span>
+        </div>
+        <p class="compare-note compare-note--good">No identity revealed</p>
+      </div>
+    </div>
+
+  </div>
+
+</section>
+
+
+<!-- ══════════════════════════════════════════════════════════════
+     HARDWARE
+═══════════════════════════════════════════════════════════════ -->
+<section class="section hardware-section" id="hardware" aria-labelledby="hardwareHeading">
+
+  <div class="section-header">
+    <p class="section-label mono">PROTOTYPE</p>
+    <h2 id="hardwareHeading">What the system uses</h2>
+  </div>
+
+  <ul class="hardware-list" role="list">
+    <li class="hardware-item reveal">
+      <span class="hw-index mono">01</span>
+      <div class="hw-body">
+        <h3 class="hw-name">ESP32 Sender</h3>
+        <p class="hw-role mono">CSI Transmitter</p>
+      </div>
+    </li>
+    <li class="hardware-item reveal">
+      <span class="hw-index mono">02</span>
+      <div class="hw-body">
+        <h3 class="hw-name">ESP32 Receiver</h3>
+        <p class="hw-role mono">CSI Capture</p>
+      </div>
+    </li>
+    <li class="hardware-item reveal">
+      <span class="hw-index mono">03</span>
+      <div class="hw-body">
+        <h3 class="hw-name">Laptop</h3>
+        <p class="hw-role mono">Processing</p>
+      </div>
+    </li>
+    <li class="hardware-item reveal">
+      <span class="hw-index mono">04</span>
+      <div class="hw-body">
+        <h3 class="hw-name">Wi-Fi Network</h3>
+        <p class="hw-role mono">Optional / Infrastructure</p>
+      </div>
+    </li>
+  </ul>
+
+</section>
+
+
+<!-- ══════════════════════════════════════════════════════════════
+     FUTURE
+═══════════════════════════════════════════════════════════════ -->
+<section class="section future-section" id="about" aria-labelledby="futureHeading">
+
+  <div class="section-header">
+    <p class="section-label mono">ROADMAP</p>
+    <h2 id="futureHeading">Where it goes next</h2>
+  </div>
+
+  <ol class="future-chain" role="list" aria-label="Future development roadmap">
+    <li class="future-item reveal">
+      <span class="future-dot" aria-hidden="true"></span>
+      <span class="future-label">Activity Recognition</span>
+      <span class="future-tag mono">Current</span>
+    </li>
+    <li class="future-item reveal">
+      <span class="future-dot" aria-hidden="true"></span>
+      <span class="future-label">Indoor Localization</span>
+      <span class="future-tag mono planned">Planned</span>
+    </li>
+    <li class="future-item reveal">
+      <span class="future-dot" aria-hidden="true"></span>
+      <span class="future-label">Multi-Person Detection</span>
+      <span class="future-tag mono planned">Planned</span>
+    </li>
+    <li class="future-item reveal">
+      <span class="future-dot" aria-hidden="true"></span>
+      <span class="future-label">Fall Detection</span>
+      <span class="future-tag mono planned">Planned</span>
+    </li>
+    <li class="future-item reveal">
+      <span class="future-dot" aria-hidden="true"></span>
+      <span class="future-label">Smart-Environment Integration</span>
+      <span class="future-tag mono planned">Planned</span>
+    </li>
+  </ol>
+
+</section>
+
+{% endblock %}
+
+{% block extra_js %}
+<!-- Three.js for hero 3D -->
+<script src="https://cdn.jsdelivr.net/npm/three@0.160.1/build/three.min.js"></script>
+<script src="{{ url_for('static', filename='js/hero3d.js') }}" defer></script>
+<script src="{{ url_for('static', filename='js/signal.js') }}"  defer></script>
+{% endblock %}

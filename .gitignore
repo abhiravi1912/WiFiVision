@@ -1,0 +1,14 @@
+# Python environments and bytecode
+venv/
+.venv/
+**/__pycache__/
+*.py[cod]
+
+# Generated CSI captures, datasets, trained artifacts, and logs
+ESP32-WiFi-CSI-Human-Sensing/data/
+ESP32-WiFi-CSI-Human-Sensing/logs/
+
+# Local editor and OS files
+.DS_Store
+.idea/
+.vscode/

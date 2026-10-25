@@ -1,0 +1,5 @@
+# Copy these values to your PowerShell session if the CSI project
+# is not found automatically.
+$env:WIFI_VISION_CSI_ROOT="C:\path\to\ESP32-WiFi-CSI-Human-Sensing-main\ESP32-WiFi-CSI-Human-Sensing-main"
+$env:WIFI_VISION_CSI_PORT="COM13"
+$env:WIFI_VISION_CSI_BAUD="921600"
